@@ -1,0 +1,7 @@
+Package: cloudjournal
+Version: 1.0.{build}
+Architecture: armhf
+Maintainer: Dan Esparza <esparza.dan@gmail.com>
+Installed-Size: 4500
+Homepage: https://github.com/danesparza/cloudjournal
+Description: journald to AWS CloudWatch log shipping service for Raspberry Pi

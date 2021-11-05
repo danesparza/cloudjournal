@@ -1,0 +1,8 @@
+server:
+  port: 3010
+  allowed-origins: "*"
+datastore:
+  system: /var/lib/cloudjournal/db/system.db
+  retentiondays: 30
+log:
+  level: info

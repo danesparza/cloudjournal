@@ -1,2 +1,2 @@
 # cloudjournal
-A journald to AWs cloudwatch log shipper
+A journald to AWS cloudwatch log shipper

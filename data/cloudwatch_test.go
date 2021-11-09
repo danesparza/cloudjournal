@@ -18,7 +18,7 @@ func Cloudwatch_WriteLogs_Successful(t *testing.T) {
 	//	This could come from environment
 	group := "/app/cloudjournal"
 	stream := "unittest"
-	var nextSequenceToken *string
+	var nextSequenceToken string
 	var m sync.Mutex
 
 	// Define the session - using SharedConfigState which forces file or env creds
@@ -90,7 +90,7 @@ func Cloudwatch_WriteLogs_Successful(t *testing.T) {
 
 	if len(resp.LogStreams) > 0 {
 		//	Get the next sequence token (WTF is this?)
-		nextSequenceToken = resp.LogStreams[0].UploadSequenceToken
+		nextSequenceToken = *resp.LogStreams[0].UploadSequenceToken
 		t.Logf("Next sequence token: %v", nextSequenceToken)
 	}
 
@@ -108,14 +108,14 @@ func Cloudwatch_WriteLogs_Successful(t *testing.T) {
 		LogEvents:     []*cloudwatchlogs.InputLogEvent{event},
 		LogGroupName:  aws.String(group),
 		LogStreamName: aws.String(stream),
-		SequenceToken: nextSequenceToken,
+		SequenceToken: &nextSequenceToken,
 	}
 	logResp, err := svc.PutLogEvents(params)
 	if err != nil {
 		t.Errorf("Error putting log events: %v", err)
 	}
 
-	nextSequenceToken = logResp.NextSequenceToken
+	nextSequenceToken = *logResp.NextSequenceToken
 	t.Logf("Next sequence token: %v", nextSequenceToken)
 
 }

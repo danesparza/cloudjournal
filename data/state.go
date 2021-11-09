@@ -9,9 +9,10 @@ import (
 )
 
 type LogState struct {
-	Unit       string    `json:"unit"`
-	LastCursor string    `json:"last_cursor"`
-	LastSynced time.Time `json:"last_synced"`
+	Unit              string    `json:"unit"`
+	LastCursor        string    `json:"last_cursor"`
+	NextSequenceToken string    `json:"next_sequence_token"`
+	LastSynced        time.Time `json:"last_synced"`
 }
 
 // UpdateLogState updates the log state for a given unit

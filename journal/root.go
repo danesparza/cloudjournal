@@ -1,5 +1,13 @@
 package journal
 
+import (
+	"fmt"
+	"os/exec"
+
+	"google.golang.org/appengine/log"
+	"gotest.tools/gotestsum/log"
+)
+
 /*
 	JSON data example:
 
@@ -59,4 +67,34 @@ type Entry struct {
 	Message                 string `json:"MESSAGE"`
 	SourceRealtimeTimestamp string `json:"_SOURCE_REALTIME_TIMESTAMP"`
 	SystemDInvocationID     string `json:"_SYSTEMD_INVOCATION_ID"`
+}
+
+// GetJournalEntriesForUnitFromCursor gets a list of journal entries in JSON format
+// for the given unit.  It gets all journal entries from the given cursor (or from the
+// beginning if the cursor is empty)
+func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
+	retval := []Entry{}
+
+	var cmd *exec.Cmd
+
+	//	Get a list of entries for the given unit:
+	// journalctl --unit=daydash --output=json --no-pager
+	// or
+	// journalctl --unit=daydash --output=json --no-pager --after-cursor="s=f4a560eb4f2b45b8ba4c8b5fba8ab6ce;i=232;b=fb0855f265b440ab8d797634862ddb83;m=24fb96f;t=5d05edfec1b9b;x=7db05987bc8c3aab"
+	if cursor == "" {
+		cmd = exec.Command("journalctl", fmt.Sprintf("--unit=\"%s\"", unit), "--output=json", "--no-pager")
+	} else {
+		cmd = exec.Command("journalctl", fmt.Sprintf("--unit=\"%s\"", unit), "--output=json", "--no-pager", fmt.Sprintf("--after-cursor=\"%s\"", cursor))
+	}
+
+	content, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Error("problem running journalctl command: %v", err)
+		return retval
+	}
+
+	//	Spit out what we found so far:
+	fmt.Printf("%s", string(content))
+
+	return retval
 }

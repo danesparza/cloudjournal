@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/danesparza/cloudjournal/journal"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("start called")
+		entries := journal.GetJournalEntriesForUnitFromCursor("daydash", "s=152362fbd3cb491dac4b70a0eb7da4d7;i=230;b=378e82b47ba0454fad0b338e20aec7b0;m=235a86f;t=5d08066dc3ef4;x=c25b0ce5a0e74080")
+
+		for _, entry := range entries {
+			fmt.Printf("Item: %s\n", entry.Message)
+		}
 	},
 }
 

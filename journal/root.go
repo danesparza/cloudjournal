@@ -1,8 +1,10 @@
 package journal
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 /*
@@ -79,19 +81,33 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 	// or
 	// journalctl --unit=daydash --output=json --no-pager --after-cursor="s=f4a560eb4f2b45b8ba4c8b5fba8ab6ce;i=232;b=fb0855f265b440ab8d797634862ddb83;m=24fb96f;t=5d05edfec1b9b;x=7db05987bc8c3aab"
 	if cursor == "" {
-		cmd = exec.Command("journalctl", fmt.Sprintf("--unit=\"%s\"", unit), "--output=json", "--no-pager")
+		cmd = exec.Command("journalctl", "--unit", unit, "--output", "json", "--no-pager")
 	} else {
-		cmd = exec.Command("journalctl", fmt.Sprintf("--unit=\"%s\"", unit), "--output=json", "--no-pager", fmt.Sprintf("--after-cursor=\"%s\"", cursor))
+		cmd = exec.Command("journalctl", "--unit", unit, "--output", "json", "--no-pager", "--after-cursor", cursor)
 	}
 
 	content, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("problem running journalctl command: %v", err)
+		fmt.Printf("problem running journalctl command: %v\n", err)
 		return retval
 	}
 
-	//	Spit out what we found so far:
-	fmt.Printf("%s", string(content))
+	//	Replace newlines with a comma
+	jsonEntries := strings.ReplaceAll(string(content), "\n", ",")
 
+	//	Remove the trailing comma if it exists:
+	jsonEntries = strings.TrimSuffix(jsonEntries, ",")
+
+	//	Wrap the entire thing in JSON array brackets
+	jsonEntries = fmt.Sprintf("[%s]", jsonEntries)
+
+	//	Deserialize to Entry objects
+	err = json.Unmarshal([]byte(jsonEntries), &retval)
+	if err != nil {
+		fmt.Printf("problem deserializing: %v\n", err)
+		return retval
+	}
+
+	//	Return the list of Entries
 	return retval
 }

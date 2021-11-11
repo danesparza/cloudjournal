@@ -3,9 +3,6 @@ package journal
 import (
 	"fmt"
 	"os/exec"
-
-	"google.golang.org/appengine/log"
-	"gotest.tools/gotestsum/log"
 )
 
 /*
@@ -89,7 +86,7 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 
 	content, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Error("problem running journalctl command: %v", err)
+		fmt.Printf("problem running journalctl command: %v", err)
 		return retval
 	}
 

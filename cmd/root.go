@@ -15,7 +15,7 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "nimbostratus",
+	Use:   "cloudjournal",
 	Short: "A journald to cloudwatch log shipper",
 	Long:  `A journald to cloudwatch log shipper`,
 }
@@ -31,7 +31,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/nimbostratus.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/cloudjournal.yaml)")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -48,13 +48,13 @@ func initConfig() {
 	} else {
 		viper.AddConfigPath(home)           // adding home directory as first search path
 		viper.AddConfigPath(".")            // also look in the working directory
-		viper.SetConfigName("nimbostratus") // name the config file (without extension)
+		viper.SetConfigName("cloudjournal") // name the config file (without extension)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	//	Set our defaults
-	viper.SetDefault("datastore.system", path.Join(home, "nimbostratus", "db", "system.db"))
+	viper.SetDefault("datastore.system", path.Join(home, "cloudjournal", "db", "system.db"))
 	viper.SetDefault("datastore.retentiondays", 30)
 	viper.SetDefault("server.port", "2005")
 	viper.SetDefault("server.allowed-origins", "*")

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -88,7 +90,7 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 
 	content, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("problem running journalctl command: %v\n", err)
+		log.WithError(err).Error("problem running journalctl command")
 		return retval
 	}
 
@@ -104,7 +106,7 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 	//	Deserialize to Entry objects
 	err = json.Unmarshal([]byte(jsonEntries), &retval)
 	if err != nil {
-		fmt.Printf("problem deserializing: %v\n", err)
+		log.WithError(err).Error("problem deserializing")
 		return retval
 	}
 

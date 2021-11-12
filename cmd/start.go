@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/danesparza/cloudjournal/data"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,14 +16,9 @@ import (
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: start,
+	Short: "Start the server",
+	Long:  `The start command starts the log shipping server`,
+	Run:   start,
 }
 
 func start(cmd *cobra.Command, args []string) {
@@ -40,7 +34,7 @@ func start(cmd *cobra.Command, args []string) {
 	loglevel := viper.GetString("log.level")
 
 	//	Emit what we know:
-	log.WithFields(logrus.Fields{
+	log.WithFields(log.Fields{
 		"systemdb": systemdb,
 		"loglevel": loglevel,
 	}).Info("Starting up")
@@ -53,22 +47,15 @@ func start(cmd *cobra.Command, args []string) {
 	}
 	defer db.Close()
 
-	//	Create an api service object
-	/*
-		apiService := api.Service{
-			DB:         db,
-			StartTime:  time.Now(),
-			HistoryTTL: time.Duration(int(historyttl)*24) * time.Hour,
-			WsHub:      api.NewHub(),
-			Cache:      cache.New(5*time.Minute, 10*time.Minute),
-		}
-	*/
-
 	//	Trap program exit appropriately
 	ctx, cancel := context.WithCancel(context.Background())
 	sigs := make(chan os.Signal, 2)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 	go handleSignals(ctx, sigs, cancel, db)
+
+	//	Get the comma-seperated list of units to check from configuration
+
+	//	If there are no units specified, indicate that in the log
 
 	//	Log that the system has started:
 	log.Info("System started")
@@ -100,11 +87,11 @@ func handleSignals(ctx context.Context, sigs <-chan os.Signal, cancel context.Ca
 	case sig := <-sigs:
 		switch sig {
 		case os.Interrupt:
-			log.WithFields(logrus.Fields{
+			log.WithFields(log.Fields{
 				"signal": "SIGINT",
 			}).Info("Shutting down")
 		case syscall.SIGTERM:
-			log.WithFields(logrus.Fields{
+			log.WithFields(log.Fields{
 				"signal": "SIGTERM",
 			}).Info("Shutting down")
 		}

@@ -74,7 +74,12 @@ func start(cmd *cobra.Command, args []string) {
 	for {
 		select {
 		case <-t:
-			log.Info("Something is happening...")
+			//	For each unit
+
+			//	Get the entries
+
+			//	Log them
+
 		case <-ctx.Done():
 			return
 		}

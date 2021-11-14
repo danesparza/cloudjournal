@@ -26,7 +26,7 @@ func Cloudwatch_WriteLogs_Successful(t *testing.T) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 		Config:            aws.Config{Region: aws.String("us-east-1")},
-		Profile:           "daydash", /* Specify the profile to use in the credentials file */
+		Profile:           "cloudjournal", /* Specify the profile to use in the credentials file */
 	})
 	if err != nil {
 		t.Errorf("unable to create AWS session for cloudwatch logs: %v", err)

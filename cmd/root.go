@@ -55,10 +55,15 @@ func initConfig() {
 
 	//	Set our defaults
 	viper.SetDefault("datastore.system", path.Join(home, "cloudjournal", "db", "system.db"))
-	viper.SetDefault("datastore.retentiondays", 30)
 	viper.SetDefault("server.port", "2005")
 	viper.SetDefault("server.allowed-origins", "*")
 	viper.SetDefault("log.level", "info")
+	viper.SetDefault("monitor.units", "")     // (Comma seperated) Default to no units monitored
+	viper.SetDefault("monitor.interval", "1") // Default to send data every 1 minute
+	viper.SetDefault("cloudwatch.region", "us-east-1")
+	viper.SetDefault("cloudwatch.profile", "cloudjournal")
+	viper.SetDefault("cloudwatch.group", "/app/cloudjournal")
+	// Cloudwatch stream = unit we're monitoring
 
 	// If a config file is found, read it in
 	viper.ReadInConfig()

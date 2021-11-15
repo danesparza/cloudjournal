@@ -1,6 +1,7 @@
 package cloudwatch
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,7 +42,8 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit": unit,
+			"unit":               unit,
+			"cloudwatch.profile": awsProfileName,
 		}).WithError(err).Error("unable to create AWS session for cloudwatch logs")
 		return err
 	}
@@ -51,7 +53,8 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	_, err = sts.New(sess).GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit": unit,
+			"unit":               unit,
+			"cloudwatch.profile": awsProfileName,
 		}).WithError(err).Error("cannot validate aws credentials")
 		return err
 	}
@@ -77,7 +80,9 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 				})
 				if err != nil {
 					log.WithFields(log.Fields{
-						"unit": unit,
+						"unit":               unit,
+						"cloudwatch.profile": awsProfileName,
+						"cloudwatch.group":   groupName,
 					}).WithError(err).Error("can't create the log group")
 					return err
 				}
@@ -89,7 +94,9 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 				})
 				if err != nil {
 					log.WithFields(log.Fields{
-						"unit": unit,
+						"unit":               unit,
+						"cloudwatch.profile": awsProfileName,
+						"cloudwatch.group":   groupName,
 					}).WithError(err).Error("can't create the log stream")
 					return err
 				}
@@ -102,7 +109,9 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 
 				if err != nil {
 					log.WithFields(log.Fields{
-						"unit": unit,
+						"unit":               unit,
+						"cloudwatch.profile": awsProfileName,
+						"cloudwatch.group":   groupName,
 					}).WithError(err).Error("this thing just doesn't want to work!")
 					return err
 				}
@@ -121,12 +130,22 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	// Create cloudwatch log events from our entries
 	events := []*cloudwatchlogs.InputLogEvent{}
 	for _, entry := range entries {
+
+		//	Convert RealtimeTimestamp to an int64:
+		timestamp, err := strconv.ParseInt(entry.RealtimeTimestamp, 10, 64)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"unit":                    unit,
+				"cloudwatch.profile":      awsProfileName,
+				"cloudwatch.group":        groupName,
+				"entry.RealtimeTimestamp": entry.RealtimeTimestamp,
+			}).WithError(err).Error("problem converting timestamp to int64")
+			continue
+		}
+
 		event := &cloudwatchlogs.InputLogEvent{
-			Message: aws.String(entry.Message),
-			/*Timestamp: entry.RealtimeTimestamp (but divided by 1000)
-			It'll look like 1636016409883533 but needs to look like 1636016409883
-			*/
-			Timestamp: aws.Int64(int64(time.Nanosecond) * time.Now().UnixNano() / int64(time.Millisecond)),
+			Message:   aws.String(entry.Message),
+			Timestamp: aws.Int64(int64(time.Nanosecond) * timestamp / int64(time.Millisecond)),
 		}
 
 		events = append(events, event)
@@ -142,7 +161,9 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	logResp, err := svc.PutLogEvents(params)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit": unit,
+			"unit":               unit,
+			"cloudwatch.profile": awsProfileName,
+			"cloudwatch.group":   groupName,
 		}).WithError(err).Error("problem writing cloudwatch events")
 		return err
 	}

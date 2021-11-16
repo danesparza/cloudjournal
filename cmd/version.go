@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var buildVersion = "Unknown"
-var commitID string
+var BuildVersion = "Unknown"
+var CommitID string
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
@@ -15,11 +15,11 @@ var versionCmd = &cobra.Command{
 	Short: "Shows the version information",
 	Run: func(cmd *cobra.Command, args []string) {
 		//	Show the version number
-		fmt.Printf("\ncloudjournal version %s", buildVersion)
+		fmt.Printf("\ncloudjournal version %s", BuildVersion)
 
 		//	Show the commitID if available:
-		if commitID != "" {
-			fmt.Printf(" (%s)", commitID[:7])
+		if CommitID != "" {
+			fmt.Printf(" (%s)", CommitID[:7])
 		}
 
 		//	Trailing space and newline

@@ -68,8 +68,8 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		LogStreamNamePrefix: aws.String(streamName),
 	})
 
-	//	If we got an error (maybe the stream doesn't exist yet)...
-	if err != nil {
+	//	If we got an error (or if we appear to have no log streams)...
+	if err != nil || len(resp.LogStreams) < 1 {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			//	If it's because the log information doesn't exist ...

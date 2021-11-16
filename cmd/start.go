@@ -39,8 +39,11 @@ func start(cmd *cobra.Command, args []string) {
 
 	//	Emit what we know:
 	log.WithFields(log.Fields{
-		"systemdb": systemdb,
-		"loglevel": loglevel,
+		"systemdb":           systemdb,
+		"loglevel":           loglevel,
+		"cloudwatch.group":   viper.GetString("cloudwatch.group"),
+		"cloudwatch.profile": viper.GetString("cloudwatch.profile"),
+		"cloudwatch.region":  viper.GetString("cloudwatch.region"),
 	}).Info("Starting up")
 
 	//	Create a DBManager object

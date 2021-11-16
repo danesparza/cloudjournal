@@ -28,7 +28,7 @@ type Service struct {
 func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 
 	//	Get defaults:
-	groupName := viper.GetString("cloudwatch.group")
+	groupName := service.LogGroupName
 	streamName := unit
 	awsProfileName := viper.GetString("cloudwatch.profile")
 	cloudwatchRegion := viper.GetString("cloudwatch.region")

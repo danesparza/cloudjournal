@@ -35,13 +35,8 @@ func (store Manager) UpdateLogState(unit, lastCursor string) (LogState, error) {
 		return err
 	})
 
-	//	If there was an error saving the data, report it:
-	if err != nil {
-		return retval, fmt.Errorf("problem saving the data: %s", err)
-	}
-
 	//	Return our data:
-	return retval, nil
+	return retval, err
 }
 
 // GetLogStateForUnit gets log state for a given unit
@@ -66,13 +61,8 @@ func (store Manager) GetLogStateForUnit(unit string) (LogState, error) {
 		return nil
 	})
 
-	//	If there was an error, report it:
-	if err != nil {
-		return retval, fmt.Errorf("problem getting the log state: %s", err)
-	}
-
 	//	Return our data:
-	return retval, nil
+	return retval, err
 }
 
 // GetLogStateForAllUnits gets log state for all units
@@ -106,11 +96,6 @@ func (store Manager) GetLogStateForAllUnits() ([]LogState, error) {
 		return nil
 	})
 
-	//	If there was an error, report it:
-	if err != nil {
-		return retval, fmt.Errorf("problem getting log state for all units: %s", err)
-	}
-
 	//	Return our data:
-	return retval, nil
+	return retval, err
 }

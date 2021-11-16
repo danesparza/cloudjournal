@@ -125,6 +125,12 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	nextSequenceToken := ""
 	if len(resp.LogStreams) > 0 {
 		nextSequenceToken = *resp.LogStreams[0].UploadSequenceToken
+		log.WithFields(log.Fields{
+			"unit":              unit,
+			"cloudwatch.group":  groupName,
+			"nextSequenceToken": nextSequenceToken,
+			"logStreamName":     *resp.LogStreams[0].LogStreamName,
+		}).Debug("found next sequence token")
 	}
 
 	// Create cloudwatch log events from our entries
@@ -162,6 +168,8 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	if err != nil {
 		log.WithFields(log.Fields{
 			"unit":               unit,
+			"streamName":         streamName,
+			"nextSequenceToken":  nextSequenceToken,
 			"cloudwatch.profile": awsProfileName,
 			"cloudwatch.group":   groupName,
 		}).WithError(err).Error("problem writing cloudwatch events")

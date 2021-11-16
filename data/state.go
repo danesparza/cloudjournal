@@ -9,20 +9,18 @@ import (
 )
 
 type LogState struct {
-	Unit              string    `json:"unit"`
-	LastCursor        string    `json:"last_cursor"`
-	NextSequenceToken string    `json:"next_sequence_token"`
-	LastSynced        time.Time `json:"last_synced"`
+	Unit       string    `json:"unit"`
+	LastCursor string    `json:"last_cursor"`
+	LastSynced time.Time `json:"last_synced"`
 }
 
 // UpdateLogState updates the log state for a given unit
-func (store Manager) UpdateLogState(unit, lastCursor, nextSequenceToken string) (LogState, error) {
+func (store Manager) UpdateLogState(unit, lastCursor string) (LogState, error) {
 	//	Our return item
 	retval := LogState{
-		Unit:              unit,
-		LastCursor:        lastCursor,
-		NextSequenceToken: nextSequenceToken,
-		LastSynced:        time.Now(),
+		Unit:       unit,
+		LastCursor: lastCursor,
+		LastSynced: time.Now(),
 	}
 
 	//	Serialize to JSON format

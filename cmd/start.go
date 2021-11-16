@@ -4,10 +4,13 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/danesparza/cloudjournal/cloudwatch"
 	"github.com/danesparza/cloudjournal/data"
+	"github.com/danesparza/cloudjournal/journal"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,7 +42,7 @@ func start(cmd *cobra.Command, args []string) {
 		"loglevel": loglevel,
 	}).Info("Starting up")
 
-	//	Create a DBManager object and associate with the api.Service
+	//	Create a DBManager object
 	db, err := data.NewManager(systemdb)
 	if err != nil {
 		log.WithError(err).Error("Error trying to open the system database")
@@ -47,15 +50,27 @@ func start(cmd *cobra.Command, args []string) {
 	}
 	defer db.Close()
 
+	//	Associate the dbmanager object with the cloudwatch svc
+	cloudService := cloudwatch.Service{
+		DB:           db,
+		LogGroupName: viper.GetString("cloudwatch.group"),
+	}
+
 	//	Trap program exit appropriately
 	ctx, cancel := context.WithCancel(context.Background())
 	sigs := make(chan os.Signal, 2)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	go handleSignals(ctx, sigs, cancel, db)
+	go handleSignals(ctx, sigs, cancel)
 
 	//	Get the comma-seperated list of units to check from configuration
+	monitoredUnits := strings.Split(viper.GetString("monitor.units"), ",")
 
 	//	If there are no units specified, indicate that in the log
+	if len(monitoredUnits) < 1 {
+		log.WithFields(log.Fields{
+			"monitor.units": viper.GetString("monitor.units"),
+		}).Fatal("No monitor.units specified in config file.  There is nothing to monitor")
+	}
 
 	//	Log that the system has started:
 	log.Info("System started")
@@ -65,19 +80,37 @@ func start(cmd *cobra.Command, args []string) {
 		select {
 		case <-t:
 			//	For each unit
+			for _, unit := range monitoredUnits {
+				unit = strings.TrimSpace(unit)
 
-			//	Get the entries
-			/*
-				entries := journal.GetJournalEntriesForUnitFromCursor("daydash", "s=152362fbd3cb491dac4b70a0eb7da4d7;i=230;b=378e82b47ba0454fad0b338e20aec7b0;m=235a86f;t=5d08066dc3ef4;x=c25b0ce5a0e74080")
-
-				for _, entry := range entries {
+				//	Get the state for the unit
+				unitState, err := cloudService.DB.GetLogStateForUnit(unit)
+				if err != nil {
 					log.WithFields(log.Fields{
-						"message": entry.Message,
-					}).Info("Got an item")
+						"unit": unit,
+					}).WithError(err).Error("problem trying to get state for unit")
 				}
-			*/
 
-			//	Log them
+				//	Get the entries from the last cursor
+				entries := journal.GetJournalEntriesForUnitFromCursor(unit, unitState.LastCursor)
+
+				//	If we have entries ...
+				if len(entries) > 0 {
+					log.WithFields(log.Fields{
+						"unit":       unit,
+						"founditems": len(entries),
+					}).Debug("found items to log")
+
+					//	Log the entries:
+					cloudService.WriteToLog(unit, entries)
+
+					//	Get the last cursor:
+					lastCursor := entries[len(entries)-1].Cursor
+
+					//	Save the state for the unit
+					cloudService.DB.UpdateLogState(unit, lastCursor)
+				}
+			}
 
 		case <-ctx.Done():
 			return
@@ -85,7 +118,7 @@ func start(cmd *cobra.Command, args []string) {
 	}
 }
 
-func handleSignals(ctx context.Context, sigs <-chan os.Signal, cancel context.CancelFunc, db *data.Manager) {
+func handleSignals(ctx context.Context, sigs <-chan os.Signal, cancel context.CancelFunc) {
 	select {
 	case <-ctx.Done():
 	case sig := <-sigs:

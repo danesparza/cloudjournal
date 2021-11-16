@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tidwall/buntdb"
 )
 
 // startCmd represents the start command
@@ -85,7 +86,7 @@ func start(cmd *cobra.Command, args []string) {
 
 				//	Get the state for the unit
 				unitState, err := cloudService.DB.GetLogStateForUnit(unit)
-				if err != nil {
+				if err != nil && err != buntdb.ErrNotFound {
 					log.WithFields(log.Fields{
 						"unit": unit,
 					}).WithError(err).Error("problem trying to get state for unit")
@@ -102,13 +103,22 @@ func start(cmd *cobra.Command, args []string) {
 					}).Debug("found items to log")
 
 					//	Log the entries:
-					cloudService.WriteToLog(unit, entries)
+					err = cloudService.WriteToLog(unit, entries)
+					if err != nil {
+						//	If we have an error, don't save state.  Just continue
+						continue
+					}
 
 					//	Get the last cursor:
 					lastCursor := entries[len(entries)-1].Cursor
 
 					//	Save the state for the unit
-					cloudService.DB.UpdateLogState(unit, lastCursor)
+					_, err = cloudService.DB.UpdateLogState(unit, lastCursor)
+					if err != nil {
+						log.WithFields(log.Fields{
+							"unit": unit,
+						}).WithError(err).Error("problem trying to save state for unit")
+					}
 				}
 			}
 

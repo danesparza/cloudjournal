@@ -157,13 +157,19 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		events = append(events, event)
 	}
 
-	//	Save all the events we gathered:
+	//	Format our log request
 	params := &cloudwatchlogs.PutLogEventsInput{
 		LogEvents:     events,
 		LogGroupName:  aws.String(groupName),
 		LogStreamName: aws.String(streamName),
-		SequenceToken: &nextSequenceToken,
 	}
+
+	//	If we have a sequence token, use it:
+	if len(nextSequenceToken) > 0 {
+		params.SequenceToken = &nextSequenceToken
+	}
+
+	//	Log our events
 	logResp, err := svc.PutLogEvents(params)
 	if err != nil {
 		log.WithFields(log.Fields{

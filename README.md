@@ -3,7 +3,7 @@ Journald to AWS cloudwatch log shipper
 
 
 ## Installing
-Don't forget to add `/root/.aws/credentials`.  It should look like this: 
+Don't forget to add `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should look like this: 
 
 ```
 [cloudjournal]

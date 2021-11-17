@@ -222,9 +222,21 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 			continue
 		}
 
+		//	Format the timestamp
+		formattedTimestamp := int64(time.Nanosecond) * timestamp / int64(time.Millisecond)
+
+		log.WithFields(log.Fields{
+			"unit":    unit,
+			"stream":  streamName,
+			"tstamp":  formattedTimestamp,
+			"message": entry.Message,
+			"group":   groupName,
+		}).Debug("adding log event")
+
+		//	Add the event
 		event := &cloudwatchlogs.InputLogEvent{
 			Message:   aws.String(entry.Message),
-			Timestamp: aws.Int64(int64(time.Nanosecond) * timestamp / int64(time.Millisecond)),
+			Timestamp: aws.Int64(formattedTimestamp),
 		}
 
 		events = append(events, event)
@@ -249,7 +261,6 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		"nextSequenceToken": nextSequenceToken,
 		"cloudwatch.group":  groupName,
 		"eventCount":        len(params.LogEvents),
-		"events":            params.LogEvents,
 	}).Debug("writing to cloudwatch logs...")
 
 	_, err = svc.PutLogEvents(params)

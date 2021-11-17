@@ -116,11 +116,13 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 		return retval
 	}
 
-	log.WithFields(log.Fields{
-		"unit":      unit,
-		"cursor":    cursor,
-		"itemCount": len(retval),
-	}).Debug("found items in journald")
+	if len(retval) > 0 {
+		log.WithFields(log.Fields{
+			"unit":      unit,
+			"cursor":    cursor,
+			"itemCount": len(retval),
+		}).Debug("found items in journald")
+	}
 
 	//	Return the list of Entries
 	return retval

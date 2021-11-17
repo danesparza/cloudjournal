@@ -22,14 +22,10 @@ type Service struct {
 	LogGroupName string
 }
 
-// WriteToLog writes the journal entries to the cloudwatch log stream for the unit
-// Might want to handle errors similarly to
-// https://github.com/devops-genuine/opentelemetry-collector-contrib/blob/e38594a148080bd0b102281b830505c4acb1b736/exporter/awsemfexporter/cwlog_client.go#L84-L118
-func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
+// GetAWSSession gets an AWS session to use with an operation
+func (service Service) GetAWSSession() (*session.Session, error) {
 
-	//	Get defaults:
-	groupName := service.LogGroupName
-	streamName := unit
+	//	Get the configuration information for the AWS profile and region
 	awsProfileName := viper.GetString("cloudwatch.profile")
 	cloudwatchRegion := viper.GetString("cloudwatch.region")
 
@@ -42,10 +38,10 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit":               unit,
 			"cloudwatch.profile": awsProfileName,
+			"cloudwatch.region":  cloudwatchRegion,
 		}).WithError(err).Error("unable to create AWS session for cloudwatch logs")
-		return err
+		return nil, err
 	}
 
 	// Determine if we are authorized to access AWS with the credentials provided. This does not mean you have access to the
@@ -53,9 +49,89 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	_, err = sts.New(sess).GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit":               unit,
 			"cloudwatch.profile": awsProfileName,
+			"cloudwatch.region":  cloudwatchRegion,
 		}).WithError(err).Error("cannot validate aws credentials")
+		return nil, err
+	}
+
+	return sess, nil
+}
+
+// CreateLogGroup creates a cloudwatch log group
+func (service Service) CreateLogGroup() error {
+	//	Get an AWS session
+	sess, err := service.GetAWSSession()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"cloudwatch.group": service.LogGroupName,
+		}).WithError(err).Error("unable to create AWS session in order to create a log group")
+		return err
+	}
+
+	//	Create the cloudwatch logs service from the AWS session
+	svc := cloudwatchlogs.New(sess)
+
+	//	.... Create the stream
+	_, err = svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+		LogGroupName: aws.String(service.LogGroupName),
+	})
+	if err != nil {
+		log.WithFields(log.Fields{
+			"cloudwatch.group": service.LogGroupName,
+		}).WithError(err).Error("can't create the log group")
+		return err
+	}
+
+	return nil
+}
+
+// CreateLogStream creates a cloudwatch log stream
+func (service Service) CreateLogStream(streamName string) error {
+
+	//	Get an AWS session
+	sess, err := service.GetAWSSession()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"streamName": streamName,
+		}).WithError(err).Error("unable to create AWS session in order to create a log stream")
+		return err
+	}
+
+	//	Create the cloudwatch logs service from the AWS session
+	svc := cloudwatchlogs.New(sess)
+
+	//	.... Create the stream
+	_, err = svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
+		LogGroupName:  aws.String(service.LogGroupName),
+		LogStreamName: aws.String(streamName),
+	})
+	if err != nil {
+		log.WithFields(log.Fields{
+			"streamName":       streamName,
+			"cloudwatch.group": service.LogGroupName,
+		}).WithError(err).Error("can't create the log stream")
+		return err
+	}
+
+	return nil
+}
+
+// WriteToLog writes the journal entries to the cloudwatch log stream for the unit
+// Might want to handle errors similarly to
+// https://github.com/devops-genuine/opentelemetry-collector-contrib/blob/e38594a148080bd0b102281b830505c4acb1b736/exporter/awsemfexporter/cwlog_client.go#L84-L118
+func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
+
+	//	Get defaults:
+	groupName := service.LogGroupName
+	streamName := unit
+
+	//	Get an AWS session
+	sess, err := service.GetAWSSession()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"unit": unit,
+		}).WithError(err).Error("unable to create AWS session in order to write a log message")
 		return err
 	}
 
@@ -69,55 +145,48 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	})
 
 	//	If we got an error (or if we appear to have no log streams)...
-	if err != nil || len(resp.LogStreams) < 1 {
+	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			//	If it's because the log information doesn't exist ...
 			case cloudwatchlogs.ErrCodeResourceNotFoundException:
-				//	... Create the log group
-				_, err = svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
-					LogGroupName: aws.String(groupName),
-				})
+				log.WithFields(log.Fields{
+					"aerr.code":    aerr.Code(),
+					"aerr.message": aerr.Message(),
+				}).WithError(err).Debug("describe log streams says the resource doesn't exist.  Creating the log group and log stream")
+
+				//	Create the log group
+				err = service.CreateLogGroup()
 				if err != nil {
-					log.WithFields(log.Fields{
-						"unit":               unit,
-						"cloudwatch.profile": awsProfileName,
-						"cloudwatch.group":   groupName,
-					}).WithError(err).Error("can't create the log group")
-					return err
+					log.WithError(err).Error("problem creating log group")
 				}
 
-				//	.... Create the stream
-				_, err = svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
-					LogGroupName:  aws.String(groupName),
-					LogStreamName: aws.String(streamName),
-				})
+				//	Create the log stream
+				err = service.CreateLogStream(unit)
 				if err != nil {
-					log.WithFields(log.Fields{
-						"unit":               unit,
-						"cloudwatch.profile": awsProfileName,
-						"cloudwatch.group":   groupName,
-					}).WithError(err).Error("can't create the log stream")
-					return err
+					log.WithError(err).Error("problem creating log stream")
 				}
 
-				//	Try to get the response again:
-				resp, err = svc.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
-					LogGroupName:        aws.String(groupName),
-					LogStreamNamePrefix: aws.String(streamName),
-				})
-
-				if err != nil {
-					log.WithFields(log.Fields{
-						"unit":               unit,
-						"cloudwatch.profile": awsProfileName,
-						"cloudwatch.group":   groupName,
-					}).WithError(err).Error("this thing just doesn't want to work!")
-					return err
-				}
 			default:
-
+				log.WithFields(log.Fields{
+					"aerr.code":    aerr.Code(),
+					"aerr.message": aerr.Message(),
+				}).WithError(err).Error("some other aws error is happening")
 			}
+		}
+	}
+
+	//	If we don't have log streams...
+	if len(resp.LogStreams) < 1 {
+		log.WithFields(log.Fields{
+			"unit":             unit,
+			"cloudwatch.group": groupName,
+		}).Debug("we appear to have no log stream.  Attempting to create")
+
+		//	Create the log stream
+		err = service.CreateLogStream(unit)
+		if err != nil {
+			log.WithError(err).Error("problem creating log stream")
 		}
 	}
 
@@ -142,7 +211,6 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"unit":                    unit,
-				"cloudwatch.profile":      awsProfileName,
 				"cloudwatch.group":        groupName,
 				"entry.RealtimeTimestamp": entry.RealtimeTimestamp,
 			}).WithError(err).Error("problem converting timestamp to int64")
@@ -170,20 +238,16 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	}
 
 	//	Log our events
-	logResp, err := svc.PutLogEvents(params)
+	_, err = svc.PutLogEvents(params)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit":               unit,
-			"streamName":         streamName,
-			"nextSequenceToken":  nextSequenceToken,
-			"cloudwatch.profile": awsProfileName,
-			"cloudwatch.group":   groupName,
+			"unit":              unit,
+			"streamName":        streamName,
+			"nextSequenceToken": nextSequenceToken,
+			"cloudwatch.group":  groupName,
 		}).WithError(err).Error("problem writing cloudwatch events")
 		return err
 	}
-
-	//	Do we need to save this?
-	nextSequenceToken = *logResp.NextSequenceToken
 
 	return nil
 }

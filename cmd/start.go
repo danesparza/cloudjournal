@@ -100,11 +100,6 @@ func start(cmd *cobra.Command, args []string) {
 
 				//	If we have entries ...
 				if len(entries) > 0 {
-					log.WithFields(log.Fields{
-						"unit":       unit,
-						"founditems": len(entries),
-					}).Debug("found items to log")
-
 					//	Log the entries:
 					err = cloudService.WriteToLog(unit, entries)
 					if err != nil {

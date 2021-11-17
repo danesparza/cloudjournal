@@ -74,6 +74,12 @@ type Entry struct {
 // for the given unit.  It gets all journal entries from the given cursor (or from the
 // beginning if the cursor is empty)
 func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
+
+	log.WithFields(log.Fields{
+		"unit":   unit,
+		"cursor": cursor,
+	}).Debug("requested fetch of journald log entries")
+
 	retval := []Entry{}
 
 	var cmd *exec.Cmd
@@ -109,6 +115,12 @@ func GetJournalEntriesForUnitFromCursor(unit, cursor string) []Entry {
 		log.WithError(err).Error("problem deserializing")
 		return retval
 	}
+
+	log.WithFields(log.Fields{
+		"unit":      unit,
+		"cursor":    cursor,
+		"itemCount": len(retval),
+	}).Debug("found items in journald")
 
 	//	Return the list of Entries
 	return retval

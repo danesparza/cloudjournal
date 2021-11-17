@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 )
 
@@ -16,6 +17,12 @@ type LogState struct {
 
 // UpdateLogState updates the log state for a given unit
 func (store Manager) UpdateLogState(unit, lastCursor string) (LogState, error) {
+
+	log.WithFields(log.Fields{
+		"unit":       unit,
+		"lastCursor": lastCursor,
+	}).Debug("updating state for unit")
+
 	//	Our return item
 	retval := LogState{
 		Unit:       unit,
@@ -41,6 +48,11 @@ func (store Manager) UpdateLogState(unit, lastCursor string) (LogState, error) {
 
 // GetLogStateForUnit gets log state for a given unit
 func (store Manager) GetLogStateForUnit(unit string) (LogState, error) {
+
+	log.WithFields(log.Fields{
+		"unit": unit,
+	}).Debug("getting state for unit")
+
 	//	Our return item
 	retval := LogState{}
 

@@ -122,6 +122,11 @@ func (service Service) CreateLogStream(streamName string) error {
 // https://github.com/devops-genuine/opentelemetry-collector-contrib/blob/e38594a148080bd0b102281b830505c4acb1b736/exporter/awsemfexporter/cwlog_client.go#L84-L118
 func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 
+	log.WithFields(log.Fields{
+		"unit":       unit,
+		"founditems": len(entries),
+	}).Debug("requested write of items to cloudwatch logs")
+
 	//	Get defaults:
 	groupName := service.LogGroupName
 	streamName := unit

@@ -231,7 +231,7 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		}
 
 		//	Format the timestamp
-		formattedTimestamp := int64(time.Nanosecond) * timestamp / int64(time.Millisecond)
+		formattedTimestamp := int64(time.Microsecond) * timestamp / int64(time.Millisecond)
 
 		log.WithFields(log.Fields{
 			"unit":    unit,

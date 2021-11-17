@@ -249,6 +249,7 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		"nextSequenceToken": nextSequenceToken,
 		"cloudwatch.group":  groupName,
 		"eventCount":        len(params.LogEvents),
+		"events":            params.LogEvents,
 	}).Debug("writing to cloudwatch logs...")
 
 	_, err = svc.PutLogEvents(params)

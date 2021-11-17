@@ -198,13 +198,21 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	//	Get the next sequence token if it's available
 	nextSequenceToken := ""
 	if len(resp.LogStreams) > 0 {
-		nextSequenceToken = *resp.LogStreams[0].UploadSequenceToken
-		log.WithFields(log.Fields{
-			"unit":              unit,
-			"cloudwatch.group":  groupName,
-			"nextSequenceToken": nextSequenceToken,
-			"logStreamName":     *resp.LogStreams[0].LogStreamName,
-		}).Debug("found next sequence token")
+		if resp.LogStreams[0].UploadSequenceToken != nil {
+			nextSequenceToken = *resp.LogStreams[0].UploadSequenceToken
+			log.WithFields(log.Fields{
+				"unit":              unit,
+				"cloudwatch.group":  groupName,
+				"nextSequenceToken": nextSequenceToken,
+				"logStreamName":     *resp.LogStreams[0].LogStreamName,
+			}).Debug("found next sequence token for logstream")
+		} else {
+			log.WithFields(log.Fields{
+				"unit":             unit,
+				"cloudwatch.group": groupName,
+				"logStreamName":    *resp.LogStreams[0].LogStreamName,
+			}).Debug("we found a logstream, but don't have a sequence token")
+		}
 	}
 
 	// Create cloudwatch log events from our entries

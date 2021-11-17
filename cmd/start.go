@@ -109,6 +109,9 @@ func start(cmd *cobra.Command, args []string) {
 					err = cloudService.WriteToLog(unit, entries)
 					if err != nil {
 						//	If we have an error, don't save state.  Just continue
+						log.WithFields(log.Fields{
+							"unit": unit,
+						}).WithError(err).Error("problem writing to log.  Retrying with next batch")
 						continue
 					}
 

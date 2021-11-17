@@ -238,6 +238,14 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	}
 
 	//	Log our events
+	log.WithFields(log.Fields{
+		"unit":              unit,
+		"streamName":        streamName,
+		"nextSequenceToken": nextSequenceToken,
+		"cloudwatch.group":  groupName,
+		"eventCount":        len(params.LogEvents),
+	}).Debug("writing to cloudwatch logs...")
+
 	_, err = svc.PutLogEvents(params)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -245,7 +253,7 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 			"streamName":        streamName,
 			"nextSequenceToken": nextSequenceToken,
 			"cloudwatch.group":  groupName,
-		}).WithError(err).Error("problem writing cloudwatch events")
+		}).WithError(err).Error("problem writing to cloudwatch logs")
 		return err
 	}
 

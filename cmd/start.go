@@ -11,6 +11,7 @@ import (
 	"github.com/danesparza/cloudjournal/cloudwatch"
 	"github.com/danesparza/cloudjournal/data"
 	"github.com/danesparza/cloudjournal/journal"
+	"github.com/danesparza/cloudjournal/system"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,11 +37,15 @@ func start(cmd *cobra.Command, args []string) {
 
 	systemdb := viper.GetString("datastore.system")
 	loglevel := viper.GetString("log.level")
+	machineid := system.GetMachineID()
+	hostname := system.GetHostname()
 
 	//	Emit what we know:
 	log.WithFields(log.Fields{
 		"systemdb":           systemdb,
 		"loglevel":           loglevel,
+		"machineid":          machineid,
+		"hostname":           hostname,
 		"cloudwatch.group":   viper.GetString("cloudwatch.group"),
 		"cloudwatch.profile": viper.GetString("cloudwatch.profile"),
 		"cloudwatch.region":  viper.GetString("cloudwatch.region"),

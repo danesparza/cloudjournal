@@ -23,9 +23,9 @@ datastore:
 log:
   level: info
 cloudwatch:
-  region: us-east-1
-  group: /app/cloudjournal/{unit}
-  stream: {hostname}
+  region: "us-east-1"
+  group: "/app/cloudjournal/{unit}"
+  stream: "{hostname}"
 monitor:  
   units: daydash, avahi-daemon
   interval: 1

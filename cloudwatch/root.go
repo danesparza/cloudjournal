@@ -155,7 +155,7 @@ func (service Service) WriteToLog(groupName, streamName string, entries []journa
 				log.WithFields(log.Fields{
 					"aerr.code":    aerr.Code(),
 					"aerr.message": aerr.Message(),
-				}).WithError(err).Debug("describe log streams says the resource doesn't exist.  Creating the log group and log stream")
+				}).WithError(err).Info("describe log streams says the resource doesn't exist.  Creating the log group and log stream")
 
 				//	Create the log group
 				err = service.CreateLogGroup(groupName)

@@ -62,8 +62,8 @@ func initConfig() {
 	viper.SetDefault("monitor.interval", "1") // Default to send data every 1 minute
 	viper.SetDefault("cloudwatch.region", "us-east-1")
 	viper.SetDefault("cloudwatch.profile", "cloudjournal")
-	viper.SetDefault("cloudwatch.group", "/app/cloudjournal")
-	// Cloudwatch stream = unit we're monitoring
+	viper.SetDefault("cloudwatch.group", "/app/cloudjournal/{unit}")
+	viper.SetDefault("cloudwatch.stream", "{hostname}")
 
 	// If a config file is found, read it in
 	viper.ReadInConfig()

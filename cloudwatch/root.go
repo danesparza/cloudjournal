@@ -18,8 +18,7 @@ import (
 
 // Service encapsulates cloudwatch session and operations
 type Service struct {
-	DB           *data.Manager
-	LogGroupName string
+	DB *data.Manager
 }
 
 // GetAWSSession gets an AWS session to use with an operation
@@ -59,12 +58,12 @@ func (service Service) GetAWSSession() (*session.Session, error) {
 }
 
 // CreateLogGroup creates a cloudwatch log group
-func (service Service) CreateLogGroup() error {
+func (service Service) CreateLogGroup(groupName string) error {
 	//	Get an AWS session
 	sess, err := service.GetAWSSession()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"cloudwatch.group": service.LogGroupName,
+			"cloudwatch.group": groupName,
 		}).WithError(err).Error("unable to create AWS session in order to create a log group")
 		return err
 	}
@@ -74,11 +73,11 @@ func (service Service) CreateLogGroup() error {
 
 	//	.... Create the stream
 	_, err = svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
-		LogGroupName: aws.String(service.LogGroupName),
+		LogGroupName: aws.String(groupName),
 	})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"cloudwatch.group": service.LogGroupName,
+			"cloudwatch.group": groupName,
 		}).WithError(err).Error("can't create the log group")
 		return err
 	}
@@ -87,7 +86,7 @@ func (service Service) CreateLogGroup() error {
 }
 
 // CreateLogStream creates a cloudwatch log stream
-func (service Service) CreateLogStream(streamName string) error {
+func (service Service) CreateLogStream(groupName, streamName string) error {
 
 	//	Get an AWS session
 	sess, err := service.GetAWSSession()
@@ -103,13 +102,13 @@ func (service Service) CreateLogStream(streamName string) error {
 
 	//	.... Create the stream
 	_, err = svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
-		LogGroupName:  aws.String(service.LogGroupName),
+		LogGroupName:  aws.String(groupName),
 		LogStreamName: aws.String(streamName),
 	})
 	if err != nil {
 		log.WithFields(log.Fields{
-			"streamName":       streamName,
-			"cloudwatch.group": service.LogGroupName,
+			"streamName": streamName,
+			"groupName":  groupName,
 		}).WithError(err).Error("can't create the log stream")
 		return err
 	}
@@ -117,25 +116,23 @@ func (service Service) CreateLogStream(streamName string) error {
 	return nil
 }
 
-// WriteToLog writes the journal entries to the cloudwatch log stream for the unit
+// WriteToLog writes the journal entries to the cloudwatch log stream for the tokens
 // Might want to handle errors similarly to
 // https://github.com/devops-genuine/opentelemetry-collector-contrib/blob/e38594a148080bd0b102281b830505c4acb1b736/exporter/awsemfexporter/cwlog_client.go#L84-L118
-func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
+func (service Service) WriteToLog(groupName, streamName string, entries []journal.Entry) error {
 
 	log.WithFields(log.Fields{
-		"unit":       unit,
+		"groupName":  groupName,
+		"streamName": streamName,
 		"founditems": len(entries),
 	}).Debug("requested write of items to cloudwatch logs")
-
-	//	Get defaults:
-	groupName := service.LogGroupName
-	streamName := unit
 
 	//	Get an AWS session
 	sess, err := service.GetAWSSession()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit": unit,
+			"groupName":  groupName,
+			"streamName": streamName,
 		}).WithError(err).Error("unable to create AWS session in order to write a log message")
 		return err
 	}
@@ -161,13 +158,13 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 				}).WithError(err).Debug("describe log streams says the resource doesn't exist.  Creating the log group and log stream")
 
 				//	Create the log group
-				err = service.CreateLogGroup()
+				err = service.CreateLogGroup(groupName)
 				if err != nil {
 					log.WithError(err).Error("problem creating log group")
 				}
 
 				//	Create the log stream
-				err = service.CreateLogStream(unit)
+				err = service.CreateLogStream(groupName, streamName)
 				if err != nil {
 					log.WithError(err).Error("problem creating log stream")
 				}
@@ -184,12 +181,12 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 	//	If we don't have log streams...
 	if len(resp.LogStreams) < 1 {
 		log.WithFields(log.Fields{
-			"unit":             unit,
-			"cloudwatch.group": groupName,
+			"streamName": streamName,
+			"groupName":  groupName,
 		}).Debug("we appear to have no log stream.  Attempting to create")
 
 		//	Create the log stream
-		err = service.CreateLogStream(unit)
+		err = service.CreateLogStream(groupName, streamName)
 		if err != nil {
 			log.WithError(err).Error("problem creating log stream")
 		}
@@ -201,16 +198,16 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		if resp.LogStreams[0].UploadSequenceToken != nil {
 			nextSequenceToken = *resp.LogStreams[0].UploadSequenceToken
 			log.WithFields(log.Fields{
-				"unit":              unit,
-				"cloudwatch.group":  groupName,
+				"streamName":        streamName,
+				"groupName":         groupName,
 				"nextSequenceToken": nextSequenceToken,
 				"logStreamName":     *resp.LogStreams[0].LogStreamName,
 			}).Debug("found next sequence token for logstream")
 		} else {
 			log.WithFields(log.Fields{
-				"unit":             unit,
-				"cloudwatch.group": groupName,
-				"logStreamName":    *resp.LogStreams[0].LogStreamName,
+				"streamName":    streamName,
+				"groupName":     groupName,
+				"logStreamName": *resp.LogStreams[0].LogStreamName,
 			}).Debug("we found a logstream, but don't have a sequence token")
 		}
 	}
@@ -223,8 +220,8 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		timestamp, err := strconv.ParseInt(entry.RealtimeTimestamp, 10, 64)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"unit":                    unit,
-				"cloudwatch.group":        groupName,
+				"streamName":              streamName,
+				"groupName":               groupName,
 				"entry.RealtimeTimestamp": entry.RealtimeTimestamp,
 			}).WithError(err).Error("problem converting timestamp to int64")
 			continue
@@ -234,11 +231,10 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 		formattedTimestamp := int64(time.Microsecond) * timestamp / int64(time.Millisecond)
 
 		log.WithFields(log.Fields{
-			"unit":    unit,
-			"stream":  streamName,
-			"tstamp":  formattedTimestamp,
-			"message": entry.Message,
-			"group":   groupName,
+			"streamName": streamName,
+			"tstamp":     formattedTimestamp,
+			"message":    entry.Message,
+			"groupName":  groupName,
 		}).Debug("adding log event")
 
 		//	Add the event
@@ -264,20 +260,18 @@ func (service Service) WriteToLog(unit string, entries []journal.Entry) error {
 
 	//	Log our events
 	log.WithFields(log.Fields{
-		"unit":              unit,
 		"streamName":        streamName,
 		"nextSequenceToken": nextSequenceToken,
-		"cloudwatch.group":  groupName,
+		"groupName":         groupName,
 		"eventCount":        len(params.LogEvents),
 	}).Debug("writing to cloudwatch logs...")
 
 	_, err = svc.PutLogEvents(params)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"unit":              unit,
 			"streamName":        streamName,
 			"nextSequenceToken": nextSequenceToken,
-			"cloudwatch.group":  groupName,
+			"groupName":         groupName,
 		}).WithError(err).Error("problem writing to cloudwatch logs")
 		return err
 	}

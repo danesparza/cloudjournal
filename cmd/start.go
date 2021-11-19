@@ -12,6 +12,7 @@ import (
 	"github.com/danesparza/cloudjournal/data"
 	"github.com/danesparza/cloudjournal/journal"
 	"github.com/danesparza/cloudjournal/system"
+	"github.com/danesparza/cloudjournal/token"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,16 +38,20 @@ func start(cmd *cobra.Command, args []string) {
 
 	systemdb := viper.GetString("datastore.system")
 	loglevel := viper.GetString("log.level")
-	machineid := system.GetMachineID()
-	hostname := system.GetHostname()
+
+	//	Start our token map:
+	tokens := make(map[string]string)
+	tokens["{machineid}"] = system.GetMachineID()
+	tokens["{hostname}"] = system.GetHostname()
 
 	//	Emit what we know:
 	log.WithFields(log.Fields{
 		"systemdb":           systemdb,
 		"loglevel":           loglevel,
-		"machineid":          machineid,
-		"hostname":           hostname,
+		"machineid":          tokens["{machineid}"],
+		"hostname":           tokens["{hostname}"],
 		"cloudwatch.group":   viper.GetString("cloudwatch.group"),
+		"cloudwatch.stream":  viper.GetString("cloudwatch.stream"),
 		"cloudwatch.profile": viper.GetString("cloudwatch.profile"),
 		"cloudwatch.region":  viper.GetString("cloudwatch.region"),
 	}).Info("Starting up")
@@ -61,8 +66,7 @@ func start(cmd *cobra.Command, args []string) {
 
 	//	Associate the dbmanager object with the cloudwatch svc
 	cloudService := cloudwatch.Service{
-		DB:           db,
-		LogGroupName: viper.GetString("cloudwatch.group"),
+		DB: db,
 	}
 
 	//	Trap program exit appropriately
@@ -92,6 +96,11 @@ func start(cmd *cobra.Command, args []string) {
 			for _, unit := range monitoredUnits {
 				unit = strings.TrimSpace(unit)
 
+				//	Format our group and stream names
+				tokens["{unit}"] = unit
+				cloudwatchGroupname := token.Replace(viper.GetString("cloudwatch.group"), tokens)
+				cloudwatchStreamname := token.Replace(viper.GetString("cloudwatch.stream"), tokens)
+
 				//	Get the state for the unit
 				unitState, err := cloudService.DB.GetLogStateForUnit(unit)
 				if err != nil && err != buntdb.ErrNotFound {
@@ -105,12 +114,15 @@ func start(cmd *cobra.Command, args []string) {
 
 				//	If we have entries ...
 				if len(entries) > 0 {
+
 					//	Log the entries:
-					err = cloudService.WriteToLog(unit, entries)
+					err = cloudService.WriteToLog(cloudwatchGroupname, cloudwatchStreamname, entries)
 					if err != nil {
 						//	If we have an error, don't save state.  Just continue
 						log.WithFields(log.Fields{
-							"unit": unit,
+							"unit":       unit,
+							"groupName":  cloudwatchGroupname,
+							"streamName": cloudwatchStreamname,
 						}).WithError(err).Error("problem writing to log.  Retrying with next batch")
 						continue
 					}

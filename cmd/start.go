@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -54,6 +55,8 @@ func start(cmd *cobra.Command, args []string) {
 		"cloudwatch.stream":  viper.GetString("cloudwatch.stream"),
 		"cloudwatch.profile": viper.GetString("cloudwatch.profile"),
 		"cloudwatch.region":  viper.GetString("cloudwatch.region"),
+		"monitor.units":      viper.GetString("monitor.units"),
+		"monitor.interval":   viper.GetString("monitor.interval"),
 	}).Info("Starting up")
 
 	//	Create a DBManager object
@@ -67,6 +70,14 @@ func start(cmd *cobra.Command, args []string) {
 	//	Associate the dbmanager object with the cloudwatch svc
 	cloudService := cloudwatch.Service{
 		DB: db,
+	}
+
+	//	Convert interval to a duration
+	monitorInterval, err := time.ParseDuration(fmt.Sprintf("%vm", viper.GetString("monitor.interval")))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"monitor.interval": viper.GetString("monitor.interval"),
+		}).WithError(err).Error("problem converting interval to a duration")
 	}
 
 	//	Trap program exit appropriately
@@ -88,7 +99,7 @@ func start(cmd *cobra.Command, args []string) {
 	//	Log that the system has started:
 	log.Info("System started")
 
-	t := time.Tick(1 * time.Minute)
+	t := time.Tick(monitorInterval)
 	for {
 		select {
 		case <-t:

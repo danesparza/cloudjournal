@@ -6,10 +6,13 @@ datastore:
   retentiondays: 30
 log:
   level: info
+cloudwatch:
+  region: "us-east-1"
+  profile: "cloudjournal" 
+  group: "/app/cloudjournal/{unit}"
+  stream: "{hostname}"
 monitor:  
-  # Update units to include whatever you want to ship logs from.
-  # This is a comma separated list.  
-  # Example: 
+  # Update units to include whatever you want to ship logs from.  This is a comma separated list.  Example:
   # units: cron, avahi-daemon
   units: cron
   # Ship logs every 10 minutes by default

@@ -3,7 +3,7 @@ Journald to AWS cloudwatch log shipper
 
 ## Installing
 ### Prerequisites
-Add `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should look like this: 
+Cloudjournal will use the AWS credentials on the machine its installed on.  The AWS docs suggest managing your credentials using a file called 'credentials' -- like `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should include the `cloudjournal` profile and it should look something like this: 
 
 ```
 [cloudjournal]
@@ -87,4 +87,4 @@ There are several tokens you can use when naming `cloudwatch.group` or `cloudwat
 ## Getting your app logs to cloudwatch
 Getting your app log to cloudwatch is simple now: If your app is installed as a systemd unit, just output your logs to the console -- they'll automatically be added to journald under your systemd unit.  Then cloudwatch can take the logs for your journald unit and ship them to cloudwatch every few minutes.  
 
-JSON logging is highly recommended because AWS Cloudwatch can automatically parse JSON logs and will provide structured log filters and searching.
+JSON logging is highly recommended because [AWS Cloudwatch can automatically parse JSON logs](https://aws.amazon.com/about-aws/whats-new/2015/01/20/amazon-cloudwatch-logs-json-log-format-support/) and [will provide structured log filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html) and searching.

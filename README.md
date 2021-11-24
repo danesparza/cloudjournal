@@ -3,7 +3,7 @@ Journald to AWS cloudwatch log shipper.  Easy as pie 🥧
 
 ## Installing
 ### Prerequisites
-Cloudjournal will use the AWS credentials on the machine its installed on.  The AWS docs suggest managing your credentials using a file called 'credentials' -- like `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should include the `cloudjournal` profile and it should look something like this: 
+Cloudjournal will use the machine's AWS credentials.  The AWS docs suggest managing your credentials using a file called 'credentials' -- like `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should include the `cloudjournal` profile and it should look something like this: 
 
 ```
 [cloudjournal]

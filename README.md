@@ -85,6 +85,6 @@ There are several tokens you can use when naming `cloudwatch.group` or `cloudwat
 `{unit}` - This will be replaced with the name of the current systemd unit being processed.
 
 ## Getting your app logs to cloudwatch
-Getting your app log to cloudwatch is simple now: If your app is installed as a systemd unit, just output your logs to the console -- they'll automatically be added to journald under your systemd unit.  Then cloudwatch can take the logs for your journald unit and ship them to cloudwatch every few minutes.  
+Getting your app log to cloudwatch is simple now: If your app is installed as a systemd unit, just output your logs to the console -- they'll automatically be added to journald under your systemd unit.  Then cloudjournal can take the logs for your journald unit and ship them to cloudwatch every few minutes.  
 
 JSON logging is highly recommended because [AWS Cloudwatch can automatically parse JSON logs](https://aws.amazon.com/about-aws/whats-new/2015/01/20/amazon-cloudwatch-logs-json-log-format-support/) and [will provide structured log filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html) and searching.

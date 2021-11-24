@@ -50,8 +50,8 @@ monitor:
 ### Tokens
 There are several tokens you can use when naming `cloudwatch.group` or `cloudwatch.stream`:
 
-`{hostname}` - This will be replaced with the output from [/etc/hostname](https://man7.org/linux/man-pages/man1/hostname.1.html)
+`{hostname}` - This will be replaced with the contents of [/etc/hostname](https://man7.org/linux/man-pages/man1/hostname.1.html)
 
-`{machineid}` - This will be replaced with the output from [/etc/machine-id](https://www.man7.org/linux/man-pages/man5/machine-id.5.html)
+`{machineid}` - This will be replaced with the contents of [/etc/machine-id](https://www.man7.org/linux/man-pages/man5/machine-id.5.html)
 
-`{unit}` - This will be replaced with the name of the current systemd unit being monitored.
+`{unit}` - This will be replaced with the name of the current systemd unit being processed.

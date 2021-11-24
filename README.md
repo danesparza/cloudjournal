@@ -25,10 +25,10 @@ log:
 cloudwatch:
   region: "us-east-1"
   group: "/app/cloudjournal/{unit}"
-  stream: "{hostname}"
+  stream: "{machineid}"
 monitor:  
   units: daydash, avahi-daemon
-  interval: 1
+  interval: 10
 ```
 
 `server` indicates where a runtime diagnostic interface is hosted.  It may be removed

@@ -1,15 +1,43 @@
 # cloudjournal [![CircleCI](https://circleci.com/gh/danesparza/cloudjournal.svg?style=shield)](https://circleci.com/gh/danesparza/cloudjournal)
 Journald to AWS cloudwatch log shipper
 
-
 ## Installing
-Don't forget to add `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should look like this: 
+### Prerequisites
+Add `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should look like this: 
 
 ```
 [cloudjournal]
 aws_access_key_id = AWS_ACCESS_KEY_ID_HERE
 aws_secret_access_key = aws_secret_access_key_here
 ```
+The credentials for the `cloudjournal` profile should have the following AWS permissions:
+
+```JSON
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "logs:GetLogEvents",
+                "logs:FilterLogEvents"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Installing the package
+Get the latest .deb package for your architecture here: https://github.com/danesparza/cloudjournal/releases/latest  
+
+Install it using 
+`sudo dpkg -i cloudjournal-1.0.45_armhf.deb`
 
 ## Configuration
 Configuration is done via /etc/cloudjournal/config.yaml.  Here is an example configuration file:
@@ -55,3 +83,8 @@ There are several tokens you can use when naming `cloudwatch.group` or `cloudwat
 `{machineid}` - This will be replaced with the contents of [/etc/machine-id](https://www.man7.org/linux/man-pages/man5/machine-id.5.html)
 
 `{unit}` - This will be replaced with the name of the current systemd unit being processed.
+
+## Getting your app logs to cloudwatch
+Getting your app log to cloudwatch is simple now: If your app is installed as a systemd unit, just output your logs to the console -- they'll automatically be added to journald under your systemd unit.  Then cloudwatch can take the logs for your journald unit and ship them to cloudwatch every few minutes.  
+
+JSON logging is highly recommended because AWS Cloudwatch can automatically parse JSON logs and will provide structured log filters and searching.

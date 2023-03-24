@@ -1,6 +1,8 @@
 # cloudjournal [![CircleCI](https://circleci.com/gh/danesparza/cloudjournal.svg?style=shield)](https://circleci.com/gh/danesparza/cloudjournal)
 Journald to AWS cloudwatch log shipper.  Easy as pie 🥧
 
+**Deprecated.**  Just use https://vector.dev/ -- it's simpler and more flexible.  
+
 ## Installing
 ### Prerequisites
 Cloudjournal will use the machine's AWS credentials.  The AWS docs suggest managing your credentials using a file called 'credentials' -- like `/root/.aws/credentials` ([more information on the AWS documentation site](https://docs.aws.amazon.com/sdkref/latest/guide/file-location.html)).  It should include the `cloudjournal` profile and it should look something like this: 
